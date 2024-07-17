@@ -1,0 +1,8 @@
+[2024-07-17 15:31:23,215 INFO] Loading 800 HR images from ./dataset/DIV2K_train_HR
+[2024-07-17 15:31:23,215 INFO] Downscale of x4 has been started
+[2024-07-17 15:33:37,365 INFO] Downscale of x4 has been completed
+800 images have been downscaled and saved in ./dataset/DIV2K_train_LRx4
+[2024-07-17 15:33:37,375 INFO] Loading 100 HR images from ./dataset/DIV2K_valid_HR
+[2024-07-17 15:33:37,375 INFO] Downscale of x4 has been started
+[2024-07-17 15:33:54,464 INFO] Downscale of x4 has been completed
+100 images have been downscaled and saved in ./dataset/DIV2K_valid_LRx4
