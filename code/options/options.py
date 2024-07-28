@@ -5,11 +5,10 @@ from collections import OrderedDict
 import json
 import pathlib
 
+
 def parse(opt_path, is_train=True):
     # remove comments starting with '//'
-    print(opt_path)
-    print(pathlib.Path(opt_path).is_file())
-    opt = ""
+
     with open(opt_path, "r") as f:
         opt = json.loads(f.read())
 
@@ -42,7 +41,7 @@ def parse(opt_path, is_train=True):
         if path and key in opt['path']:
             opt['path'][key] = os.path.expanduser(path)
     if is_train:
-        experiments_root = os.path.join(opt['path']['root'], 'experiments', opt['name'])
+        experiments_root = os.path.join(opt['path']['root'], '../experiments', opt['name'])
         opt['path']['experiments_root'] = experiments_root
         opt['path']['models'] = os.path.join(experiments_root, 'models')
         opt['path']['training_state'] = os.path.join(experiments_root, 'training_state')

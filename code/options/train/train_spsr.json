@@ -15,8 +15,8 @@
       "dataroot_LR": "DIV2K_train_LRx4",
       "subset_file": null,
       "use_shuffle": true,
-      "n_workers": 16,
-      "batch_size": 8,
+      "n_workers": 8,
+      "batch_size": 128,
       "HR_size": 128,
       "use_flip": true,
       "use_rot": true

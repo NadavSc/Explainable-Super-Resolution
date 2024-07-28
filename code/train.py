@@ -1,11 +1,7 @@
 import os.path
-import sys
 import math
 import argparse
-import time
 import random
-import numpy as np
-from collections import OrderedDict
 import logging
 
 import torch, torchvision
@@ -16,8 +12,8 @@ from data import create_dataloader, create_dataset
 from models import create_model
 import os
 
-def main():
 
+def main():
     # options
     parser = argparse.ArgumentParser()
     parser.add_argument('-opt', type=str, required=True, help='Path to option JSON file.')
@@ -105,7 +101,7 @@ def main():
             model.optimize_parameters(current_step)
 
             # update learning rate
-            model.update_learning_rate()            
+            model.update_learning_rate()
 
             # log
             if current_step % opt['logger']['print_freq'] == 0:
@@ -119,14 +115,13 @@ def main():
                         tb_logger.add_scalar(k, v, current_step)
                 logger.info(message)
 
-
             # validation
             if current_step % opt['train']['val_freq'] == 0:
                 avg_psnr = 0.0
                 idx = 0
                 for val_data in val_loader:
                     idx += 1
-                    img_name = os.path.splitext(os.path.basename(val_data['LR_path'][0]))[0]#LR_Path
+                    img_name = os.path.splitext(os.path.basename(val_data['LR_path'][0]))[0]  # LR_Path
                     img_dir = os.path.join(opt['path']['val_images'], img_name)
                     util.mkdir(img_dir)
 
@@ -138,15 +133,15 @@ def main():
                     gt_img = util.tensor2img(visuals['HR'])  # uint8
 
                     # Save SR images for reference
-                    save_img_path = os.path.join(img_dir, '{:s}_{:d}.png'.format(\
+                    save_img_path = os.path.join(img_dir, '{:s}_{:d}.png'.format( \
                         img_name, current_step))
                     util.save_img(sr_img, save_img_path)
 
-
                     # Log gt and sr img
-                    tb_logger.add_image(img_name, 
-                            torchvision.utils.make_grid(torch.stack((visuals['SR'], visuals['HR'], visuals['SR_branch']), dim=0)), 
-                            global_step=current_step)
+                    tb_logger.add_image(img_name,
+                                        torchvision.utils.make_grid(
+                                            torch.stack((visuals['SR'], visuals['HR'], visuals['SR_branch']), dim=0)),
+                                        global_step=current_step)
 
                     # calculate PSNR
                     crop_size = opt['scale']
