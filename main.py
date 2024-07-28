@@ -1,6 +1,13 @@
-import os
+import json
 import argparse
+import json
+import os
+import subprocess
+from collections import OrderedDict
 
+from datasets import load_dataset
+from modules.SRGAN.test import test as srgan_test
+from modules.SRGAN.train import train as srgan_train
 from torch.utils.data import DataLoader
 from torchvision import transforms
 
@@ -8,19 +15,14 @@ from dataset import DataExtractor, crop, augmentation
 from logger.logger import set_logger, info
 from preprocess import downscale_image
 from preprocess import load_dataset
-from modules.SRGAN.train import train as srgan_train
-from modules.SRGAN.test import test as srgan_test
-from modules.SRGAN.test import predict as srgan_predict
-from datasets import load_from_disk, load_dataset
-
 
 set_logger('./logger/log.txt')
 db_path = './dataset'
 downscale_factor = 4
-db_train_lr_path = f'./dataset/DIV2K_train_LRx{downscale_factor}'
-db_valid_lr_path = f'./dataset/DIV2K_valid_LRx{downscale_factor}'
-db_train_hr_path = './dataset/DIV2K_train_HR'
-db_valid_hr_path = './dataset/DIV2K_valid_HR'
+db_train_lr_path = f'DIV2K_train_LRx{downscale_factor}'
+db_valid_lr_path = f'DIV2K_valid_LRx{downscale_factor}'
+db_train_hr_path = 'DIV2K_train_HR'
+db_valid_hr_path = 'DIV2K_valid_HR'
 
 
 def downscale_images(lr_path, hr_path, downscale_factor):
@@ -43,12 +45,30 @@ def downscale_images(lr_path, hr_path, downscale_factor):
          f'{N} images have been downscaled and saved in {lr_path}')
 
 
+def train_spsr(batch_size):
+    with open("SPSR/code/options/train/train_spsr.json", "r") as spsr_config_fp:
+        spsr_config_json = json.loads(spsr_config_fp.read(), object_pairs_hook=OrderedDict)
+        spsr_config_json["datasets"]["train"]["batch_size"] = batch_size
+        spsr_config_json["datasets"]["train"]["dataroot_HR"] = db_train_hr_path
+        spsr_config_json["datasets"]["train"]["dataroot_LR"] = db_train_lr_path
+        spsr_config_json["datasets"]["val"]["dataroot_HR"] = db_valid_hr_path
+        spsr_config_json["datasets"]["val"]["dataroot_LR"] = db_valid_lr_path
+
+    with open("SPSR/code/options/train/train_spsr.json", "w") as spsr_config_fp_write:
+        json.dump(spsr_config_json, spsr_config_fp_write, indent=2)
+        spsr_config_fp_write.flush()
+
+        subprocess.run(["python", r".\SPSR\code\train.py", "-opt",
+                        r"C:\Users\itaim\PycharmProjects\sr_div2k\SPSR\code\options\train\train_spsr.json"])
+
+
 if __name__ == "__main__":
     # Arguments
     parser = argparse.ArgumentParser(
         description='Examine several SR modules and responsible on the pre-process.'
     )
     parser.add_argument("--srgan", type=bool, default=True, help='True for using SRGAN')
+    parser.add_argument("--spsr", type=bool, help='True for using SPSR')
     parser.add_argument("--mode", type=str, default='train', help='train/test')
     parser.add_argument("--scale", type=int, default=4, help='Scale for each patch in an image')
     parser.add_argument("--patch_size", type=int, default=24, help='Number of patches for one image')
@@ -76,6 +96,9 @@ if __name__ == "__main__":
     if args.downscale:
         downscale_images(lr_path=db_train_lr_path, hr_path=db_train_hr_path, downscale_factor=downscale_factor)
         downscale_images(lr_path=db_valid_lr_path, hr_path=db_valid_hr_path, downscale_factor=downscale_factor)
+
+    if args.spsr:
+        train_spsr(batch_size=args.batch_size)
 
     if args.mode == 'train':
         transform = transforms.Compose([crop(args.scale, args.patch_size), augmentation()])
