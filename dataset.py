@@ -40,7 +40,8 @@ class DataExtractor(Dataset):
             info(f'{len(hr_img)} HR images have been loaded')
         else:
             hr_img = self.save_to_disk(self.hr_path)
-            info('{len(hr_img)} HR images have been loaded and saved to disk')
+            info(f'{len(hr_img)} HR images have been loaded and saved to disk')
+
         return lr_img, hr_img
 
     def __len__(self):
@@ -48,11 +49,14 @@ class DataExtractor(Dataset):
 
     def __getitem__(self, i):
         img_item = {}
-        lr_img = self.lr_img[i]
-        hr_img = self.hr_img[i]
+        lr_img = self.lr_img[i]['image']
+        hr_img = self.hr_img[i]['image']
 
         img_item['lr'] = (lr_img / 127.5) - 1.0
         img_item['hr'] = (hr_img / 127.5) - 1.0
+
+        img_item['lr'] = np.array(img_item['lr'])  # .transpose(1, 2, 0)
+        img_item['hr'] = np.array(img_item['hr'])
 
         if self.transform is not None:
             img_item = self.transform(img_item)
