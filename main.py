@@ -1,10 +1,12 @@
 import os
 import argparse
+import subprocess
 
 from torch.utils.data import DataLoader
 from torchvision import transforms
 
 from dataset import DataExtractor, crop, augmentation
+from evaluate import evaluate
 from logger.logger import set_logger, info
 from preprocess import downscale_image
 from preprocess import load_dataset
@@ -43,13 +45,24 @@ def downscale_images(lr_path, hr_path, downscale_factor):
          f'{N} images have been downscaled and saved in {lr_path}')
 
 
+def args_handler(args):
+    if args.model == 'srgan':
+        pre_trained_dir = r'./modules/SRGAN/pre_trained'
+        args.generator_path = os.path.join(pre_trained_dir,'SRGAN.pt') \
+            if args.model_type == 'srgan' else os.path.join(pre_trained_dir, 'SRResNet.pt')
+
+        if args.mode == 'evaluate':
+            args.db_valid_sr_path = f'./modules/SRGAN/results/{args.model_type.upper()}'
+    return args
+
+
 if __name__ == "__main__":
     # Arguments
     parser = argparse.ArgumentParser(
         description='Examine several SR modules and responsible on the pre-process.'
     )
-    parser.add_argument("--srgan", type=bool, default=True, help='True for using SRGAN')
-    parser.add_argument("--mode", type=str, default='train', help='train/test')
+    parser.add_argument("--model", type=str, default='srgan', help='srgan/srooe')
+    parser.add_argument("--mode", type=str, default='evaluate', help='train/test/evaluate')
     parser.add_argument("--scale", type=int, default=4, help='Scale for each patch in an image')
     parser.add_argument("--patch_size", type=int, default=24, help='Number of patches for one image')
     parser.add_argument('--num_workers', type=int, default=8, help='Number of workers in DataLoader')
@@ -58,6 +71,11 @@ if __name__ == "__main__":
                         help='Create a LR version of train and valid dataset')
     parser.add_argument('--downscale_factor', type=int, default='4', help='Specify the downscale factor')
     parser.add_argument('--cuda', type=bool, default=True, help='Choose True or False for device cuda:0/cpu')
+    parser.add_argument('--db_train_lr_path', type=str, default=db_train_lr_path)
+    parser.add_argument('--db_valid_lr_path', type=str, default=db_valid_lr_path)
+    parser.add_argument('--db_train_hr_path', type=str, default=db_train_hr_path)
+    parser.add_argument('--db_valid_hr_path', type=str, default=db_valid_hr_path)
+    parser.add_argument('--db_valid_sr_path', type=str, default=None)
 
     # SRGAN
     parser.add_argument("--fine_tuning", type=bool, default=True)
@@ -70,30 +88,28 @@ if __name__ == "__main__":
     parser.add_argument("--feat_layer", type=str, default='relu5_4')
     parser.add_argument("--vgg_rescale_coeff", type=float, default=0.006)
     parser.add_argument("--generator_path", type=str, default='./modules/SRGAN/pre_trained/SRGAN.pt')
+    parser.add_argument("--model_type", type=str, default='srgan', help='Choose srgan/srresnet')
 
     args, unknown = parser.parse_known_args()
+    args = args_handler(args)
 
     if args.downscale:
         downscale_images(lr_path=db_train_lr_path, hr_path=db_train_hr_path, downscale_factor=downscale_factor)
         downscale_images(lr_path=db_valid_lr_path, hr_path=db_valid_hr_path, downscale_factor=downscale_factor)
 
     if args.mode == 'train':
-        transform = transforms.Compose([crop(args.scale, args.patch_size), augmentation()])
-        train_dataset = DataExtractor(mode='train',
-                                      lr_path=db_train_lr_path,
-                                      hr_path=db_train_hr_path,
-                                      transform=transform)
-        train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
-
-        if args.srgan:
-            srgan_train(args, train_loader)
+        if args.model == 'srgan':
+            info('SRGAN training is running')
+            srgan_train(args)
 
     if args.mode == 'test':
-        validation_dataset = DataExtractor(mode='validation',
-                                           lr_path=db_valid_lr_path,
-                                           hr_path=db_valid_hr_path,
-                                           transform=None)
-        validation_loader = DataLoader(validation_dataset, batch_size=1, shuffle=False, num_workers=args.num_workers)
-
-        if args.srgan:
-            srgan_test(args, validation_loader)
+        if args.model == 'srgan':
+            info('SRGAN testing is running')
+            srgan_test(args)
+        
+        if args.model == 'srooe':
+            info('SROOE testing is running')
+            subprocess.run(["python", r"modules/SROOE/codes/test.py", "-opt", r"modules/SROOE/codes/options/test/test.yml"])
+    
+    if args.mode == 'evaluate':
+        evaluate(args)

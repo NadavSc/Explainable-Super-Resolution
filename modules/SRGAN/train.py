@@ -11,7 +11,14 @@ import numpy as np
 from PIL import Image
 
 
-def train(args, train_loader):
+def train(args):
+    transform = transforms.Compose([crop(args.scale, args.patch_size), augmentation()])
+    train_dataset = DataExtractor(mode='train',
+                                    lr_path=args.db_train_lr_path,
+                                    hr_path=args.db_train_hr_path,
+                                    transform=transform)
+    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
+
     device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu")
 
     generator = Generator(img_feat=3, n_feats=64, kernel_size=3, num_block=args.res_num, scale=args.scale)

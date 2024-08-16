@@ -12,18 +12,21 @@ from logger.logger import info
 
 
 class DataExtractor(Dataset):
-    def __init__(self, mode, lr_path, hr_path, transform=None):
+    def __init__(self, mode, lr_path, hr_path, transform=None, eval=False):
         self.mode = mode
         self.lr_path = os.path.join(lr_path, 'arrow')
         self.hr_path = os.path.join(hr_path, 'arrow')
         self.transform = transform
+        self.eval = eval
 
         self.lr_img, self.hr_img = self.load_datasets()
 
     def save_to_disk(self, arrow_path):
         os.makedirs(arrow_path)
         db_path = os.path.dirname(arrow_path)
+        import pdb; pdb.set_trace()
         db_img = load_dataset(db_path, data_files={self.mode: '*.png'}, split=self.mode).with_format('torch')
+        import pdb; pdb.set_trace()
         db_img.save_to_disk(arrow_path)
         return db_img
 
@@ -52,11 +55,16 @@ class DataExtractor(Dataset):
         lr_img = self.lr_img[i]['image']
         hr_img = self.hr_img[i]['image']
 
+        if self.eval:
+            img_item['lr'] = lr_img
+            img_item['hr'] = hr_img
+            return img_item
+
         img_item['lr'] = (lr_img / 127.5) - 1.0
         img_item['hr'] = (hr_img / 127.5) - 1.0
 
-        img_item['lr'] = np.array(img_item['lr'])  # .transpose(1, 2, 0)
-        img_item['hr'] = np.array(img_item['hr'])
+        img_item['lr'] = np.array(img_item['lr']).transpose(1, 2, 0)
+        img_item['hr'] = np.array(img_item['hr']).transpose(1, 2, 0)
 
         if self.transform is not None:
             img_item = self.transform(img_item)

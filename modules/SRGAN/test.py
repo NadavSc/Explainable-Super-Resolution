@@ -13,7 +13,13 @@ from logger.logger import info
 from modules.SRGAN import Generator, Discriminator, vgg19, TVLoss, perceptual_loss
 
 
-def test(args, validation_loader):
+def test(args):
+    validation_dataset = DataExtractor(mode='validation',
+                                        lr_path=args.db_valid_lr_path,
+                                        hr_path=args.db_valid_hr_path,
+                                        transform=None)
+    validation_loader = DataLoader(validation_dataset, batch_size=1, shuffle=False, num_workers=args.num_workers)
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     device = 'cpu'
     generator = Generator(img_feat=3, n_feats=64, kernel_size=3, num_block=args.res_num)
@@ -21,7 +27,9 @@ def test(args, validation_loader):
     generator = generator.to(device)
     generator.eval()
 
-    f = open('./modules/SRGAN/results/result.txt', 'w')
+    save_dir = './modules/SRGAN/results/SRGAN' if args.model_type == 'srgan'\
+         else './modules/SRGAN/results/SRRESNET'
+    f = open(os.path.join(save_dir, 'result.txt'), 'w')
     psnr_list = []
 
     with torch.no_grad():
@@ -53,7 +61,7 @@ def test(args, validation_loader):
             f.write('psnr : %04f \n' % psnr)
 
             result = Image.fromarray((output * 255.0).astype(np.uint8))
-            result.save(f'./modules/SRGAN/results/res_%04d.png' % i)
+            result.save(os.path.join(save_dir, f'res_%04d.png' % i))
         info(f'Average PSNR: {np.mean(psnr_list):.04f}')
         f.write('avg psnr : %04f' % np.mean(psnr_list))
 
