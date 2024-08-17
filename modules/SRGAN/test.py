@@ -57,7 +57,7 @@ def test(args):
 
             psnr = peak_signal_noise_ratio(y_output / 255.0, y_hr / 255.0, data_range=1.0)
             psnr_list.append(psnr)
-            info(f'Image {i} SRGAN PSNR: {psnr:.04f}')
+            info(f'Image {i} {args.model_type.upper} PSNR: {psnr:.04f}')
             f.write('psnr : %04f \n' % psnr)
 
             result = Image.fromarray((output * 255.0).astype(np.uint8))

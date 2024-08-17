@@ -24,9 +24,7 @@ class DataExtractor(Dataset):
     def save_to_disk(self, arrow_path):
         os.makedirs(arrow_path)
         db_path = os.path.dirname(arrow_path)
-        import pdb; pdb.set_trace()
         db_img = load_dataset(db_path, data_files={self.mode: '*.png'}, split=self.mode).with_format('torch')
-        import pdb; pdb.set_trace()
         db_img.save_to_disk(arrow_path)
         return db_img
 

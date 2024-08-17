@@ -1,5 +1,8 @@
 *.png
 *.log
 .pt
+.json
+.arrow
+.txt
 __pycache__/
 

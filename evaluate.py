@@ -4,7 +4,7 @@ import torch
 import numpy as np
 import math
 from skimage.metrics import peak_signal_noise_ratio as compare_psnr
-from skimage.metrics import structural_similarity as ssim
+from skimage.metrics import structural_similarity as calculate_ssim
 from skimage.color import rgb2ycbcr
 
 from dataset import DataExtractor
@@ -48,28 +48,8 @@ def calculate_psnr(img1, img2):
     return 20 * math.log10(255.0 / math.sqrt(mse))
 
 
-def calculate_ssim(img1, img2):
-    '''calculate SSIM
-    the same outputs as MATLAB's
-    img1, img2: [0, 255]
-    '''
-    if not img1.shape == img2.shape:
-        raise ValueError('Input images must have the same dimensions.')
-    if img1.ndim == 2:
-        return ssim(img1, img2)
-    elif img1.ndim == 3:
-        if img1.shape[2] == 3:
-            ssims = []
-            for i in range(3):
-                ssims.append(ssim(img1, img2))
-            return np.array(ssims).mean()
-        elif img1.shape[2] == 1:
-            return ssim(np.squeeze(img1), np.squeeze(img2))
-    else:
-        raise ValueError('Wrong input image dimensions.')
-
-
 def evaluate(args):
+    info(f'{args.model_type.upper} evaluation - LR validation dataset')
     validation_dataset = DataExtractor(mode='validation',
                                             lr_path=args.db_valid_sr_path,
                                             hr_path=args.db_valid_hr_path,
@@ -82,6 +62,9 @@ def evaluate(args):
     import lpips
     lpips_model = lpips.LPIPS(net='alex')
     lpips_model.to(torch.cuda.current_device())
+    psnr_hist = []
+    ssim_hist = []
+    lpips_hist = []
 
     f = open(os.path.join(args.db_valid_sr_path, 'results.txt'), 'w')
     for i, data in enumerate(validation_loader):
@@ -93,10 +76,19 @@ def evaluate(args):
 
         sr_img = np.array(sr_img)
         hr_img = np.array(hr_img)
-        lpips = calculate_lpips(lpips_model, sr_img, hr_img)
-        psnr = calculate_psnr(sr_img, hr_img)
-        ssim_value = ssim(sr_img, hr_img, win_size=sr_img.shape[-1], channel_axis=-1)
-        result = f'Image {i} PSNR: {psnr:.04f} | SSIM: {ssim_value:.04f} | LPIPS: {lpips:.04f}'
+        lpips_value = calculate_lpips(lpips_model, sr_img, hr_img)
+        psnr_value = calculate_psnr(sr_img, hr_img)
+        ssim_value = calculate_ssim(sr_img, hr_img, win_size=sr_img.shape[-1], channel_axis=-1)
+        result = f'Image {i} PSNR: {psnr_value:.04f} | SSIM: {ssim_value:.04f} | LPIPS: {lpips_value:.04f}'
         info(result)
         f.write(result+'\n')
+        psnr_hist.append(psnr_value)
+        ssim_hist.append(ssim_value)
+        lpips_hist.append(lpips_value)
+    psnr_avg = np.average(np.array(psnr_hist))
+    ssim_avg = np.average(np.array(ssim_hist))
+    lpips_avg = np.average(np.array(lpips_hist))
+    result = f'AVERAGE - PSNR: {psnr_avg:.04f} | SSIM: {ssim_avg:.04f} | LPIPS: {lpips_avg:.04f}'
+    info(result)
+    f.write(result+'\n')
     f.close()

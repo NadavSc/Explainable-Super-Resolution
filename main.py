@@ -13,6 +13,8 @@ from preprocess import load_dataset
 from modules.SRGAN.train import train as srgan_train
 from modules.SRGAN.test import test as srgan_test
 from modules.SRGAN.test import predict as srgan_predict
+from modules.TRAD.test import test_bicubic
+from modules.TRAD.test import test_fd
 from datasets import load_from_disk, load_dataset
 
 
@@ -47,12 +49,17 @@ def downscale_images(lr_path, hr_path, downscale_factor):
 
 def args_handler(args):
     if args.model == 'srgan':
+        args.db_valid_sr_path = f'./modules/SRGAN/results/{args.model_type.upper()}'
         pre_trained_dir = r'./modules/SRGAN/pre_trained'
         args.generator_path = os.path.join(pre_trained_dir,'SRGAN.pt') \
             if args.model_type == 'srgan' else os.path.join(pre_trained_dir, 'SRResNet.pt')
 
-        if args.mode == 'evaluate':
-            args.db_valid_sr_path = f'./modules/SRGAN/results/{args.model_type.upper()}'
+    if args.model == 'trad':
+        args.db_valid_sr_path = f'./modules/TRAD/results/{args.model_type.upper()}'
+    
+    if args.model == 'srooe':
+        args.db_valid_sr_path = './modules/SROOE/results/SROOE_t100/DIV2K_valid_LRx4'
+
     return args
 
 
@@ -61,7 +68,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description='Examine several SR modules and responsible on the pre-process.'
     )
-    parser.add_argument("--model", type=str, default='srgan', help='srgan/srooe')
+    parser.add_argument("--model", type=str, default='srooe', help='srgan/srooe/trad')
+    parser.add_argument("--model_type", type=str, default='srooe', help='|srgan: srgan/srresnet| trad: bicubic/fd|')
     parser.add_argument("--mode", type=str, default='evaluate', help='train/test/evaluate')
     parser.add_argument("--scale", type=int, default=4, help='Scale for each patch in an image')
     parser.add_argument("--patch_size", type=int, default=24, help='Number of patches for one image')
@@ -88,7 +96,6 @@ if __name__ == "__main__":
     parser.add_argument("--feat_layer", type=str, default='relu5_4')
     parser.add_argument("--vgg_rescale_coeff", type=float, default=0.006)
     parser.add_argument("--generator_path", type=str, default='./modules/SRGAN/pre_trained/SRGAN.pt')
-    parser.add_argument("--model_type", type=str, default='srgan', help='Choose srgan/srresnet')
 
     args, unknown = parser.parse_known_args()
     args = args_handler(args)
@@ -103,6 +110,13 @@ if __name__ == "__main__":
             srgan_train(args)
 
     if args.mode == 'test':
+        if args.model == 'trad':
+            if args.model_type == 'bicubic':
+                test_bicubic(args)
+
+            if args.model_type == 'fd':
+                test_fd(args)
+
         if args.model == 'srgan':
             info('SRGAN testing is running')
             srgan_test(args)
