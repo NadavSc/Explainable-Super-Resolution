@@ -1,0 +1,32 @@
+{
+  "name": "SPSR"
+  , "model": "spsr"
+  , "scale": 4
+  , "gpu_ids": [0]
+
+  , "datasets": {
+    "test_1": { 
+      "name": "DIV2K_valid_LRx4"
+      , "mode": "LRHR"
+      , "dataroot_HR": "/home/nadavsc/LIGHTBITS/projects/sr_div2k/dataset/DIV2K_valid_HR"
+      , "dataroot_LR": "/home/nadavsc/LIGHTBITS/projects/sr_div2k/dataset/DIV2K_valid_LRx4"
+    }
+  }
+  , "path": {
+    "root": "/home/nadavsc/LIGHTBITS/projects/sr_div2k/modules/SPSR"
+    , "pretrain_model_G": "/home/nadavsc/LIGHTBITS/projects/sr_div2k/modules/SPSR/code/experiments/pretrain_models/spsr.pth"
+  }
+
+  , "network_G": {
+    "which_model_G": "spsr_net"
+    , "norm_type": null
+    , "mode": "CNA"
+    , "nf": 64
+    , "nb": 23
+    , "in_nc": 3
+    , "out_nc": 3
+
+    , "gc": 32
+    , "group": 1
+  }
+}

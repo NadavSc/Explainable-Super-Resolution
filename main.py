@@ -59,6 +59,9 @@ def args_handler(args):
     
     if args.model == 'srooe':
         args.db_valid_sr_path = './modules/SROOE/results/SROOE_t100/DIV2K_valid_LRx4'
+    
+    if args.model == 'spsr':
+        args.db_valid_sr_path = './modules/SPSR/results/SPSR/DIV2K_valid_LRx4'
 
     return args
 
@@ -68,8 +71,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description='Examine several SR modules and responsible on the pre-process.'
     )
-    parser.add_argument("--model", type=str, default='srooe', help='srgan/srooe/trad')
-    parser.add_argument("--model_type", type=str, default='srooe', help='|srgan: srgan/srresnet| trad: bicubic/fd|')
+    parser.add_argument("--model", type=str, default='spsr', help='srgan/spsr/srooe/trad')
+    parser.add_argument("--model_type", type=str, default='spsr', help='|srgan: srgan/srresnet| trad: bicubic/fd|')
     parser.add_argument("--mode", type=str, default='evaluate', help='train/test/evaluate')
     parser.add_argument("--scale", type=int, default=4, help='Scale for each patch in an image')
     parser.add_argument("--patch_size", type=int, default=24, help='Number of patches for one image')
@@ -121,6 +124,9 @@ if __name__ == "__main__":
             info('SRGAN testing is running')
             srgan_test(args)
         
+        if args.model == 'spsr':
+            subprocess.run(["python", r"modules/SPSR/code/test.py", "-opt", r"modules/SPSR/code/options/test/test_spsr.json"])
+
         if args.model == 'srooe':
             info('SROOE testing is running')
             subprocess.run(["python", r"modules/SROOE/codes/test.py", "-opt", r"modules/SROOE/codes/options/test/test.yml"])

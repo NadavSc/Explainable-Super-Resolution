@@ -1,8 +1,9 @@
 *.png
 *.log
-.pt
-.json
-.arrow
-.txt
+*.pt
+*.pth
+*.json
+*.arrow
+*.txt
 __pycache__/
 
