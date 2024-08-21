@@ -49,7 +49,7 @@ def calculate_psnr(img1, img2):
 
 
 def evaluate(args):
-    info(f'{args.model_type.upper} evaluation - LR validation dataset')
+    info(f'{args.model_type.upper()} evaluation - LR validation dataset')
     validation_dataset = DataExtractor(mode='validation',
                                             lr_path=args.db_valid_sr_path,
                                             hr_path=args.db_valid_hr_path,

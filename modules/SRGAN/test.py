@@ -21,7 +21,6 @@ def test(args):
     validation_loader = DataLoader(validation_dataset, batch_size=1, shuffle=False, num_workers=args.num_workers)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    device = 'cpu'
     generator = Generator(img_feat=3, n_feats=64, kernel_size=3, num_block=args.res_num)
     generator.load_state_dict(torch.load(args.generator_path, map_location=device))
     generator = generator.to(device)
