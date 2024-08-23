@@ -18,9 +18,7 @@ def train(args):
                                     hr_path=args.db_train_hr_path,
                                     transform=transform)
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
-
     device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu")
-
     generator = Generator(img_feat=3, n_feats=64, kernel_size=3, num_block=args.res_num, scale=args.scale)
     if args.fine_tuning:
         info('Fine-tuning is running')
@@ -32,7 +30,7 @@ def train(args):
         info('Pre-training is running')
         save_dir = 'modules/SRGANPlus/models/SRRESNETPlus'
     os.makedirs(save_dir, exist_ok=True)
-    
+
 
     generator = generator.to(device)
     generator.train()
@@ -63,7 +61,7 @@ def train(args):
 
 
         if pre_epoch % 100 == 0:
-            np.save(os.path.join(save_dir, 'loss.npy'), np.array(loss_hist))
+            np.save(os.path.join(save_dir, 'train_loss.npy'), np.array(loss_hist))
             torch.save(generator.state_dict(), os.path.join(save_dir, 'SRRESNETPlus_%03d.pt' % pre_epoch))
 
     #### Train using perceptual & adversarial loss
@@ -143,3 +141,4 @@ def train(args):
             plt.close()
             torch.save(generator.state_dict(), os.path.join(save_dir, 'SRGANPlus_gene_%03d.pt' % fine_epoch))
             torch.save(discriminator.state_dict(), os.path.join(save_dir, 'SRGANPlus_discrim_%03d.pt' % fine_epoch))
+    

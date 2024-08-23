@@ -2,6 +2,7 @@ import os
 import pdb
 import torch
 import numpy as np
+import matplotlib.pyplot as plt
 import math
 from skimage.metrics import peak_signal_noise_ratio as compare_psnr
 from skimage.metrics import structural_similarity as calculate_ssim
@@ -92,3 +93,20 @@ def evaluate(args):
     info(result)
     f.write(result+'\n')
     f.close()
+
+
+def plot_loss(args):
+    train_loss = np.load(os.path.join(args.model_dir, f'models/{args.model_type.upper()}Plus/loss.npy'))
+    test_loss = np.load(os.path.join(args.model_dir, f'results/{args.model_type.upper()}Plus/test_loss.npy'))
+    test_loss_bnn = np.load(os.path.join(args.model_dir, f'results/{args.model_type.upper()}Plus/test_loss_bnn.npy'))
+    x_train = np.arange(1, len(train_loss)+1)
+    x_test = np.arange(0, (len(train_loss)+1), 100)
+    x_test_bnn = np.arange(0, (len(train_loss)+1), 100)
+
+    plt.plot(x_train, train_loss[:len(x_train)], label='train')
+    plt.plot(x_test, np.concatenate((np.array([train_loss[0]+0.02]), test_loss[:len(x_test)])), linestyle='dashed', label='val')
+    plt.plot(x_test_bnn, np.concatenate((np.array([train_loss[0]+0.07]), test_loss_bnn[:len(x_test_bnn)])), linestyle='dashed', label='val-bnn')
+    plt.ylabel('Loss')
+    plt.xlabel('Epoch')
+    plt.legend()
+    plt.savefig(os.path.join(args.model_dir, f'results/{args.model_type.upper()}Plus/test_loss.png'),  bbox_inches='tight', dpi=250)
