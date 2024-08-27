@@ -17,13 +17,53 @@ In this paper, we introduce an innovative SR model, SRResBNN, that leverages the
 - CUDA 11.7
 - Python 3.8
 
+### Files
+Make sure you have all the other repositories as well and organize them in the above structure directory:
+    
+ - SPSR: https://github.com/Maclory/SPSR
+ - SROOE: https://github.com/seungho-snu/SROOE
+
+Configure the .yml or .json file according to their instructions. 
+
 ### Test
 
-To test the pre-trained SRResBNN model:
+First, download the pre-trained SRResBNN model [here](https://drive.google.com/file/d/1Mx7QX_c4f898NV8IzDBpa6hOzDRD2AaG/view?usp=sharing).
 
-    bash test_srresbnn.sh
+Make sure the configuration in test.sh are the same as:
+
+    python main.py --model 'srresbnn' \
+                   --model_type 'srresnet' \
+                   --model_path './modules/SRResBNN/models/SRResBNN/SRResBNN_4000.pt' \
+                   --mode 'test' \
+                   --num_workers 8 \
+                   --batch_size 1 \
+                   --bnn True \
+                   --cuda True
+
+Before running the test code, make sure your dataset structure is the same as mentioned in the Data section.
+
+Then, to test the pre-trained model:
+
+    bash test.sh
     
-- Before running the test code, make sure you have the dataset structure is the same as mentioned in the Data section.
+To test other models, change model and model_type.
+
+For example, Traditional methods - BICUBIC:
+
+    python main.py --model 'trad' \
+               --model_type 'bicubic' \
+               --mode 'test' \
+               --num_workers 8 \
+               --batch_size 1 \
+
+SPSR:
+
+    python main.py --model 'spsr' \
+                   --mode 'test' \
+                   --num_workers 8 \
+                   --batch_size 1 \
+                   --cuda True
+
 
 ### Training
 
@@ -36,6 +76,10 @@ To pre-train SRResBNN model:
 In order to evaluate a given model:
 
     bash evaluate.sh
+
+Make sure to specify the correct SR results folder, for example to evaluate SRResBNN:
+
+    --db_valid_sr_path './modules/SRResBNN/results/SRResBNN'
 
 # Data
 The data that was used for training is the DIV2K (RGB images with a large diversity of contents) dataset. Dataset can be downloaded [here](https://data.vision.ee.ethz.ch/cvl/DIV2K/).
