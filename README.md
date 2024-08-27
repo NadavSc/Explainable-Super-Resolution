@@ -18,8 +18,9 @@ In this paper, we introduce an innovative SR model, SRResBNN, that leverages the
 - Python 3.8
 
 ### Files
-Make sure you have all the other repositories as well and organize them in the above structure directory:
-    
+Make sure you have all files including the other repositories and organize them in the above structure directory.
+
+ - SRResBNN: download the pre-trained SRResBNN model [here](https://drive.google.com/file/d/1Mx7QX_c4f898NV8IzDBpa6hOzDRD2AaG/view?usp=sharing).
  - SPSR: https://github.com/Maclory/SPSR
  - SROOE: https://github.com/seungho-snu/SROOE
 
@@ -27,9 +28,9 @@ Configure the .yml or .json file according to their instructions.
 
 ### Test
 
-First, download the pre-trained SRResBNN model [here](https://drive.google.com/file/d/1Mx7QX_c4f898NV8IzDBpa6hOzDRD2AaG/view?usp=sharing).
+Before running the test code, make sure your dataset structure is the same as mentioned in the Data section.
 
-Make sure the configuration in test.sh are the same as:
+To test the pre-trained SRResBNN model, make sure the configuration in test.sh is the same as:
 
     python main.py --model 'srresbnn' \
                    --model_type 'srresnet' \
@@ -39,8 +40,6 @@ Make sure the configuration in test.sh are the same as:
                    --batch_size 1 \
                    --bnn True \
                    --cuda True
-
-Before running the test code, make sure your dataset structure is the same as mentioned in the Data section.
 
 Then, to test the pre-trained model:
 
