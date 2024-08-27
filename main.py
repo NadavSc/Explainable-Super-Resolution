@@ -13,9 +13,9 @@ from preprocess import load_dataset
 from modules.SRGAN.train import train as srgan_train
 from modules.SRGAN.test import test as srgan_test
 from modules.SRGAN.test import predict as srgan_predict
-from modules.SRGANPlus.train import train as srgan_plus_train
-from modules.SRGANPlus.test import test as srgan_plus_test
-from modules.SRGANPlus.test import test_loss as srgan_plus_test_loss
+from modules.SRResBNN.train import train as srresbnn_train
+from modules.SRResBNN.test import test as srresbnn_test
+from modules.SRResBNN.test import test_loss as srresbnn_test_loss
 from modules.TRAD.test import test_bicubic
 from modules.TRAD.test import test_fd
 from datasets import load_from_disk, load_dataset
@@ -63,7 +63,7 @@ def assertions(args):
             warning('pre-training mode - fine_train_epoch is set to 0')
     
     if args.mode == 'test_loss':
-        assert args.model == 'srgan_plus' and args.model_type == 'srresnet', 'test_loss is designated for SRResNetBNN model'
+        assert args.model == 'srresbnn' and args.model_type == 'srresnet', 'test_loss is designated for SRResBNN model'
     return args
 
 
@@ -74,18 +74,18 @@ def args_handler(args):
         args.generator_path = os.path.join(r'./modules/SRGAN/pre_trained' ,'SRGAN.pt') \
             if args.model_type == 'srgan' else os.path.join(r'./modules/SRGAN/pre_trained' , 'SRResNet.pt')
 
-    if args.model == 'srgan_plus':
-        args.model_dir = './modules/SRGANPlus'
-        args.db_valid_sr_path = os.path.join(args.model_dir, f'results/{args.model_type.upper()}Plus_{args.load_epoch}')
+    if args.model == 'srresbnn':
+        args.model_dir = './modules/SRResBNN'
+        args.db_valid_sr_path = os.path.join(args.model_dir, f'results/SRResBNN')
         if args.bnn:
             args.db_valid_sr_path += '_BNN'
 
         if args.mode == 'train':
-            args.generator_path = os.path.join(r'./modules/SRGANPlus/pre_trained','SRGAN.pt') \
-                if args.model_type == 'srgan' else os.path.join(r'./modules/SRGANPlus/pre_trained', 'SRResNet.pt')
+            args.generator_path = os.path.join(r'./modules/SRResBNN/pre_trained','SRGAN.pt') \
+                if args.model_type == 'srgan' else os.path.join(r'./modules/SRResBNN/pre_trained', 'SRResNet.pt')
 
         if args.mode == 'test':
-            args.generator_path = f'./modules/SRGANPlus/models/{args.model_type.upper()}Plus/{args.model_type.upper()}Plus_{args.load_epoch}.pt'
+            args.generator_path = f'./modules/SRResBNN/models/SRResBNN/{args.model_type.upper()}Plus_{args.load_epoch}.pt'
 
     if args.model == 'trad':
         args.model_dir = './modules/TRAD'
@@ -109,9 +109,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description='Examine several SR modules and responsible on the pre-process.'
     )
-    parser.add_argument("--model", type=str, default='srgan_plus', help='srgan/srgan_plus/spsr/srooe/trad')
-    parser.add_argument("--model_type", type=str, default='srresnet', help='|srgan: srgan/srresnet| trad: bicubic/fd|')
-    parser.add_argument("--model_dir", type=str, default='./modules/SRGAN')
+    parser.add_argument("--model", type=str, default='srresbnn', help='srgan/srresbnn/spsr/srooe/trad')
+    parser.add_argument("--model_type", type=str, default='srresnet', help='|srgan: srgan/srresnet|srresbnn: srresnet|trad: bicubic/fd|')
+    parser.add_argument("--model_path", type=str, default='./modules/SRResBNN/models/SRResBNN/SRResBNN_4000.pt')
     parser.add_argument("--mode", type=str, default='test', help='train/test/test_loss/evaluate')
     parser.add_argument("--scale", type=int, default=4, help='Scale for each patch in an image')
     parser.add_argument("--patch_size", type=int, default=24, help='Number of patches for one image')
@@ -139,7 +139,9 @@ if __name__ == "__main__":
     parser.add_argument("--vgg_rescale_coeff", type=float, default=0.006)
     parser.add_argument("--generator_path", type=str, default='./modules/SRGAN/pre_trained/SRGAN.pt')
 
-    # SRGANPlus
+    # SRResBNN
+    parser.add_argument("--p", type=float, default=0.2, help='Choose the P of the dropout layer')
+    parser.add_argument("--lambd", type=float, default=10e-5, help='Choose lambda in the loss regularization term')
     parser.add_argument("--load_epoch", type=str, default='4000', help='Load the model with the given epoch')
     parser.add_argument("--bnn", type=bool, default=True, help='If True utilize the BNN training in test')
 
@@ -156,9 +158,9 @@ if __name__ == "__main__":
             info(f'{args.model_type.upper()} training is running')
             srgan_train(args)
 
-        if args.model == 'srgan_plus':
+        if args.model == 'srresbnn':
             info(f'{args.model_type.upper()}Plus training is running')
-            srgan_plus_train(args)
+            srresbnn_train(args)
 
     if args.mode == 'test':
         if args.model == 'trad':
@@ -172,9 +174,9 @@ if __name__ == "__main__":
             info(f'{args.model_type.upper()} training is running')
             srgan_test(args)
 
-        if args.model == 'srgan_plus':
-            info(f'{args.model_type.upper()}Plus testing is running')
-            srgan_plus_test(args)
+        if args.model == 'srresbnn':
+            info('SRResBNN testing is running')
+            srresbnn_test(args)
         
         if args.model == 'spsr':
             subprocess.run(["python", r"modules/SPSR/code/test.py", "-opt", r"modules/SPSR/code/options/test/test_spsr.json"])
@@ -184,9 +186,9 @@ if __name__ == "__main__":
             subprocess.run(["python", r"modules/SROOE/codes/test.py", "-opt", r"modules/SROOE/codes/options/test/test.yml"])
     
     if args.mode == 'test_loss':
-        if args.model == 'srgan_plus':
-            info(f'SRResNetBNN test loss calculation is running')
-            srgan_plus_test_loss(args)
+        if args.model == 'srresbnn':
+            info(f'SRResBNN test loss calculation is running')
+            srresbnn_test_loss(args)
 
     if args.mode == 'evaluate':            
         evaluate(args)

@@ -50,7 +50,7 @@ def calculate_psnr(img1, img2):
 
 
 def evaluate(args):
-    info(f'{args.model_type.upper()} evaluation - LR validation dataset')
+    info('Evaluation is running')
     validation_dataset = DataExtractor(mode='validation',
                                             lr_path=args.db_valid_sr_path,
                                             hr_path=args.db_valid_hr_path,
@@ -96,9 +96,9 @@ def evaluate(args):
 
 
 def plot_loss(args):
-    train_loss = np.load(os.path.join(args.model_dir, f'models/{args.model_type.upper()}Plus/loss.npy'))
-    test_loss = np.load(os.path.join(args.model_dir, f'results/{args.model_type.upper()}Plus/test_loss.npy'))
-    test_loss_bnn = np.load(os.path.join(args.model_dir, f'results/{args.model_type.upper()}Plus/test_loss_bnn.npy'))
+    train_loss = np.load(os.path.join(args.model_dir, f'models/SRResBNN/train_loss.npy'))
+    test_loss = np.load(os.path.join(args.model_dir, f'results/SRResBNN/test_loss.npy'))
+    test_loss_bnn = np.load(os.path.join(args.model_dir, f'results/SRResBNN/test_loss_bnn.npy'))
     x_train = np.arange(1, len(train_loss)+1)
     x_test = np.arange(0, (len(train_loss)+1), 100)
     x_test_bnn = np.arange(0, (len(train_loss)+1), 100)
@@ -109,4 +109,4 @@ def plot_loss(args):
     plt.ylabel('Loss')
     plt.xlabel('Epoch')
     plt.legend()
-    plt.savefig(os.path.join(args.model_dir, f'results/{args.model_type.upper()}Plus/test_loss.png'),  bbox_inches='tight', dpi=250)
+    plt.savefig(os.path.join(args.model_dir, f'results/SRResBNN/test_loss.png'),  bbox_inches='tight', dpi=250)

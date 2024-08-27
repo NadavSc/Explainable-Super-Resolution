@@ -16,7 +16,7 @@ from skimage.metrics import peak_signal_noise_ratio
 from dataset import *
 from evaluate import plot_loss
 from logger.logger import info
-from modules.SRGANPlus import Generator, Discriminator, vgg19, TVLoss, perceptual_loss
+from modules.SRResBNN import Generator, Discriminator, vgg19, TVLoss, perceptual_loss
 
 
 def test(args):
@@ -27,15 +27,11 @@ def test(args):
     validation_loader = DataLoader(validation_dataset, batch_size=1, shuffle=False, num_workers=args.num_workers)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    generator = Generator(img_feat=3, n_feats=64, kernel_size=3, num_block=args.res_num)
-    generator.load_state_dict(torch.load(args.generator_path, map_location=device))
+    generator = Generator(args=args, img_feat=3, n_feats=64, kernel_size=3, num_block=args.res_num)
+    generator.load_state_dict(torch.load(args.model_path, map_location=device))
     generator = generator.to(device)
 
     def std(outputs, mode='hsv'):
-        # if mode == 'rgb':
-        #     imgs = np.array([(np.transpose(output, (1, 2, 0)) * 255.0).astype(np.uint8) for output in outputs])
-        # if mode == 'hsv':
-        #     imgs = np.array([rgb_to_hsv((np.transpose(output, (1, 2, 0)) * 255.0).astype(np.uint8)) for output in outputs])
         if mode == 'rgb':
             imgs = np.array([np.transpose(output, (1, 2, 0)) for output in outputs])
         if mode == 'hsv':
@@ -59,10 +55,8 @@ def test(args):
         output = (output + 1.0) / 2.0
         return output
 
-    save_dir = f'./modules/SRGANPlus/results/SRGANPlus_{args.load_epoch}' if args.model_type == 'srgan'\
-         else f'./modules/SRGANPlus/results/SRRESNETPlus_{args.load_epoch}'
+    save_dir = f'./modules/SRResBNN/results/SRResBNN'
     if args.bnn:
-        save_dir += '_BNN'
         os.makedirs(os.path.join(save_dir, 'STD'), exist_ok=True)
         info('BNN is activated')
     else:
@@ -114,14 +108,10 @@ def test_loss(args):
     validation_loader = DataLoader(validation_dataset, batch_size=1, shuffle=False, num_workers=args.num_workers)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    generator = Generator(img_feat=3, n_feats=64, kernel_size=3, num_block=args.res_num)
-    save_dir = f'./modules/SRGANPlus/results/SRGANPlus_{args.load_epoch}' if args.model_type == 'srgan'\
-         else f'./modules/SRGANPlus/results/SRRESNETPlus_{args.load_epoch}'
-    if args.bnn:
-        save_dir += '_BNN'
-
+    generator = Generator(img_feat=3, n_feats=64, kernel_size=3, num_block=args.res_num, args=args)
+    save_dir = f'./modules/SRResBNN/results/SRResBNN'
     os.makedirs(save_dir, exist_ok=True)
-    model_dir = fr'./modules/SRGANPlus/models/{args.model_type.upper()}Plus'
+    model_dir = os.path.dirname(args.model_path)
     models_paths = glob.glob(os.path.join(model_dir, '*.pt'))
 
     l2_loss = nn.MSELoss()
@@ -149,12 +139,13 @@ def test_loss(args):
                 else:
                     output = generate(lr)
 
-                loss = l2_loss(hr, output)
+                loss = l2_loss(hr, output) + 10e-5*torch.norm(generator.conv02.body[0].weight.data, p=2)
 
                 iter_loss.append(loss.item())
 
             loss_hist.append(np.average(iter_loss))
             info(f'{os.path.basename(model_path)} Loss: {loss_hist[-1]:.07f}')
-    np.save(os.path.join(save_dir, 'test_loss.npy'), np.array(loss_hist))
+    name = 'test_loss_bnn.npy' if args.bnn else 'test_loss.npy'
+    np.save(os.path.join(save_dir, name), np.array(loss_hist))
     plot_loss(args)
     info('train and test loss plot has been saved')

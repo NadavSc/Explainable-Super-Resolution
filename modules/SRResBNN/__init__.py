@@ -3,12 +3,12 @@ import torch.nn as nn
 from torchvision import models
 from collections import namedtuple
 
-from modules.SRGANPlus.ops import *
+from modules.SRResBNN.ops import *
 
 
 class Generator(nn.Module):
 
-    def __init__(self, img_feat=3, n_feats=64, kernel_size=3, num_block=16, act=nn.PReLU(), scale=4):
+    def __init__(self, args, img_feat=3, n_feats=64, kernel_size=3, num_block=16, act=nn.PReLU(), scale=4):
         super(Generator, self).__init__()
 
         self.conv01 = conv(in_channel=img_feat, out_channel=n_feats, kernel_size=9, BN=False, act=act)
@@ -18,7 +18,7 @@ class Generator(nn.Module):
 
         self.conv02 = conv(in_channel=n_feats, out_channel=n_feats, kernel_size=3, BN=False, act=None)
 
-        self.dropout2d = nn.Dropout2d(p=0.2)
+        self.dropout2d = nn.Dropout2d(p=args.p)
 
         if (scale == 4):
             upsample_blocks = [Upsampler(channel=n_feats, kernel_size=3, scale=2, act=act) for _ in range(2)]
@@ -30,7 +30,7 @@ class Generator(nn.Module):
         self.last_conv = conv(in_channel=n_feats, out_channel=img_feat, kernel_size=3, BN=False, act=nn.Tanh())
 
     def forward(self, x):
-
+        
         x = self.conv01(x)
         _skip_connection = x
 

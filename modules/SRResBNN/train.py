@@ -1,11 +1,12 @@
 import pdb
 import torch
+from datetime import datetime
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from dataset import *
-from modules.SRGANPlus import Generator, Discriminator, vgg19, TVLoss, perceptual_loss
+from modules.SRResBNN import Generator, Discriminator, vgg19, TVLoss, perceptual_loss
 from logger.logger import info
 import numpy as np
 from PIL import Image
@@ -19,16 +20,16 @@ def train(args):
                                     transform=transform)
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
     device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu")
-    generator = Generator(img_feat=3, n_feats=64, kernel_size=3, num_block=args.res_num, scale=args.scale)
+    generator = Generator(img_feat=3, n_feats=64, kernel_size=3, num_block=args.res_num, scale=args.scale, args=args)
     if args.fine_tuning:
         info('Fine-tuning is running')
-        save_dir = 'modules/SRGANPlus/models/SRGAN'
+        save_dir = f'modules/SRResBNN/models/SRGAN'
         generator.load_state_dict(torch.load(args.generator_path))
         info("Pre-trained model has been loaded")
         info("Path: %s" % (args.generator_path))
     else:
         info('Pre-training is running')
-        save_dir = 'modules/SRGANPlus/models/SRRESNETPlus'
+        save_dir = f'modules/SRResBNN/models/SRResBNN'
     os.makedirs(save_dir, exist_ok=True)
 
 
@@ -48,7 +49,7 @@ def train(args):
             lr = tr_data['lr'].type(torch.cuda.FloatTensor).to(device)
 
             output, _ = generator(lr)
-            loss = l2_loss(hr, output)
+            loss = l2_loss(hr, output) + args.lambd*torch.norm(generator.conv02.body[0].weight.data, p=2)
 
             g_optim.zero_grad()
             loss.backward()
@@ -62,7 +63,7 @@ def train(args):
 
         if pre_epoch % 100 == 0:
             np.save(os.path.join(save_dir, 'train_loss.npy'), np.array(loss_hist))
-            torch.save(generator.state_dict(), os.path.join(save_dir, 'SRRESNETPlus_%03d.pt' % pre_epoch))
+            torch.save(generator.state_dict(), os.path.join(save_dir, 'SRResBNN_%03d.pt' % pre_epoch))
 
     #### Train using perceptual & adversarial loss
     vgg_net = vgg19().to(device)
@@ -127,7 +128,7 @@ def train(args):
         fine_epoch += 1
         generator_loss_hist.append(g_loss.item())
         discriminator_loss_hist.append(d_loss.item())
-        info(f'SRGANPlus Epoch: {fine_epoch} | Generator loss: {g_loss.item():.7f} | Discriminator loss: {d_loss.item():.7f}')
+        info(f'SRResBNN Epoch: {fine_epoch} | Generator loss: {g_loss.item():.7f} | Discriminator loss: {d_loss.item():.7f}')
 
         if fine_epoch % 100 == 0:
             np.save(os.path.join(save_dir, 'generator_loss.npy'), np.array(generator_loss_hist))
@@ -136,9 +137,9 @@ def train(args):
             plt.plot(np.array(generator_loss_hist), label='Discriminator')
             plt.xlabel('Epoch')
             plt.ylabel('Loss')
-            plt.title('SRGANPlus')
-            plt.savefig(os.path.join(save_dir, 'SRGANPlus_loss.png'), dpi=250)
+            plt.title('SRResBNN')
+            plt.savefig(os.path.join(save_dir, 'SRResBNN_loss.png'), dpi=250)
             plt.close()
-            torch.save(generator.state_dict(), os.path.join(save_dir, 'SRGANPlus_gene_%03d.pt' % fine_epoch))
-            torch.save(discriminator.state_dict(), os.path.join(save_dir, 'SRGANPlus_discrim_%03d.pt' % fine_epoch))
+            torch.save(generator.state_dict(), os.path.join(save_dir, 'SRResBNN_gene_%03d.pt' % fine_epoch))
+            torch.save(discriminator.state_dict(), os.path.join(save_dir, 'SRResBNN_discrim_%03d.pt' % fine_epoch))
     
